@@ -49,7 +49,7 @@
 
     .card-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: 1fr 1fr;
       gap: 1.2rem;
       width: 100%;
       max-width: 860px;
@@ -129,6 +129,54 @@
       margin-bottom: 0.8rem;
     }
 
+    #windy-card {
+      max-width: 860px;
+      width: 100%;
+      background: #111e30;
+      border: 1px solid #1e3248;
+      border-radius: 4px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 1.5rem;
+    }
+
+    #windy-card h3 {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #4a7a99;
+      margin-bottom: 0.8rem;
+    }
+
+    .windy-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .windy-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .windy-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #4a7a99;
+    }
+
+    .windy-frame {
+      width: 100%;
+      height: 280px;
+      border: 1px solid #1e3248;
+      border-radius: 3px;
+    }
+
+    @media (max-width: 560px) {
+      .windy-grid { grid-template-columns: 1fr; }
+    }
+
     #cams-card {
       max-width: 860px;
       width: 100%;
@@ -146,25 +194,44 @@
       margin-bottom: 0.8rem;
     }
 
-    .cam-links {
+    .cam-frames {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .cam-frame-wrap {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.8rem;
+      flex-direction: column;
+      gap: 0.4rem;
     }
 
-    .cam-link {
-      color: #7fd1e8;
-      text-decoration: none;
-      font-size: 0.9rem;
+    .cam-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #4a7a99;
+    }
+
+    .cam-frame {
+      width: 100%;
+      aspect-ratio: 16/9;
       border: 1px solid #1e3248;
-      padding: 0.4rem 0.9rem;
       border-radius: 3px;
-      transition: all 0.2s;
+      background: #0a1628;
     }
 
-    .cam-link:hover {
-      background: #1e3248;
-      color: #aee8f8;
+    .cam-fallback {
+      font-size: 0.78rem;
+      color: #4a7a99;
+      text-decoration: none;
+      text-align: right;
+    }
+
+    .cam-fallback:hover { color: #7fd1e8; }
+
+    @media (max-width: 560px) {
+      .cam-frames { grid-template-columns: 1fr; }
     }
 
     #error-box {
@@ -241,11 +308,28 @@
     <svg id="tide-svg" viewBox="0 0 780 220" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;margin-top:0.6rem;"></svg>
   </div>
 
+  <div id="windy-card">
+    <h3>Windy Forecast</h3>
+    <div class="windy-grid">
+      <div class="windy-wrap">
+        <div class="windy-label">Wind</div>
+        <iframe class="windy-frame" src="https://embed.windy.com/embed2.html?lat=32.655&lon=-79.940&detailLat=32.655&detailLon=-79.940&zoom=9&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1" frameborder="0"></iframe>
+      </div>
+      <div class="windy-wrap">
+        <div class="windy-label">Waves</div>
+        <iframe class="windy-frame" src="https://embed.windy.com/embed2.html?lat=32.655&lon=-79.940&detailLat=32.655&detailLon=-79.940&zoom=9&level=surface&overlay=waves&product=ecmwf&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1" frameborder="0"></iframe>
+      </div>
+    </div>
+  </div>
+
   <div id="cams-card">
     <h3>Live Webcams</h3>
-    <div class="cam-links">
-      <a class="cam-link" href="https://www.surfchex.com/cams/folly-beach-web-cam/" target="_blank" rel="noopener">Surfchex — Folly Beach</a>
-      <a class="cam-link" href="https://surfwashout.com/#livecam" target="_blank" rel="noopener">SurfWashout — Live Cam</a>
+    <div class="cam-frames">
+      <div class="cam-frame-wrap">
+        <div class="cam-label">Tides Hotel — Folly Beach</div>
+        <iframe src="https://www.surfchex.com/tidesfolly.php" class="cam-frame" allowfullscreen loading="lazy"></iframe>
+        <a class="cam-fallback" href="https://www.tidesfollybeach.com/surf-cam/" target="_blank" rel="noopener">Open in new tab →</a>
+      </div>
     </div>
   </div>
 
