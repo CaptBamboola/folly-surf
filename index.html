@@ -38,25 +38,6 @@
       margin-top: 0.3rem;
     }
 
-    #check-btn {
-      display: block;
-      margin: 0 auto 2.5rem;
-      padding: 1rem 3rem;
-      font-size: 1.1rem;
-      font-family: 'Georgia', serif;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      background: transparent;
-      color: #7fd1e8;
-      border: 2px solid #7fd1e8;
-      border-radius: 3px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    #check-btn:hover { background: #7fd1e8; color: #0a1628; }
-    #check-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
     #status {
       text-align: center;
       font-size: 0.85rem;
@@ -148,35 +129,6 @@
       margin-bottom: 0.8rem;
     }
 
-    .tide-row {
-      display: flex;
-      gap: 2rem;
-      flex-wrap: wrap;
-    }
-
-    .tide-item {
-      flex: 1;
-      min-width: 120px;
-    }
-
-    .tide-type {
-      font-size: 0.7rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #4a7a99;
-    }
-
-    .tide-time {
-      font-size: 1.1rem;
-      color: #f0e6cc;
-      margin-top: 0.1rem;
-    }
-
-    .tide-height {
-      font-size: 0.8rem;
-      color: #7a9bb5;
-    }
-
     #cams-card {
       max-width: 860px;
       width: 100%;
@@ -252,7 +204,6 @@
     <p>Surf &amp; Conditions Report &bull; Folly Beach, SC</p>
   </header>
 
-  <button id="check-btn" onclick="fetchConditions()">Check Conditions</button>
   <div id="status"></div>
 
   <div id="error-box"></div>
@@ -286,16 +237,15 @@
   </div>
 
   <div id="tides-card" class="hidden">
-    <h3>Tides — Charleston Station</h3>
-    <div class="tide-row" id="tide-row"></div>
+    <h3>Tides — Charleston Station (nearest)</h3>
+    <svg id="tide-svg" viewBox="0 0 780 220" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;margin-top:0.6rem;"></svg>
   </div>
 
   <div id="cams-card">
     <h3>Live Webcams</h3>
     <div class="cam-links">
-      <a class="cam-link" href="https://www.surfchex.com/cameras/sc/folly-beach/" target="_blank" rel="noopener">Surfchex — Washout</a>
-      <a class="cam-link" href="https://www.tideshotelinc.com/webcam/" target="_blank" rel="noopener">Tides Hotel Pier Cam</a>
-      <a class="cam-link" href="https://www.earthcam.com/usa/southcarolina/follybeach/" target="_blank" rel="noopener">EarthCam — Folly Beach</a>
+      <a class="cam-link" href="https://www.surfchex.com/cams/folly-beach-web-cam/" target="_blank" rel="noopener">Surfchex — Folly Beach</a>
+      <a class="cam-link" href="https://surfwashout.com/#livecam" target="_blank" rel="noopener">SurfWashout — Live Cam</a>
     </div>
   </div>
 
@@ -380,9 +330,100 @@
       `. Water temp ${tempF}°F. ${rating.text}`;
   }
 
+  function renderTideGraph(hourly, hiLo, now) {
+    const svg = document.getElementById('tide-svg');
+    const W = 780, H = 220;
+    const padL = 38, padR = 16, padT = 22, padB = 28;
+    const gW = W - padL - padR, gH = H - padT - padB;
+
+    const vals = hourly.map(p => parseFloat(p.v));
+    const rawMin = Math.min(...vals), rawMax = Math.max(...vals);
+    const range = rawMax - rawMin || 1;
+    const minH = rawMin - range * 0.12, maxH = rawMax + range * 0.12;
+
+    const toX = i => padL + (i / (hourly.length - 1)) * gW;
+    const toY = v => padT + gH - ((v - minH) / (maxH - minH)) * gH;
+    const pts = vals.map((v, i) => ({ x: toX(i), y: toY(v) }));
+
+    // Catmull-Rom → cubic bezier
+    function buildPath(pts) {
+      let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[Math.max(0, i - 1)];
+        const p1 = pts[i], p2 = pts[i + 1];
+        const p3 = pts[Math.min(pts.length - 1, i + 2)];
+        const cp1x = (p1.x + (p2.x - p0.x) / 6).toFixed(1);
+        const cp1y = (p1.y + (p2.y - p0.y) / 6).toFixed(1);
+        const cp2x = (p2.x - (p3.x - p1.x) / 6).toFixed(1);
+        const cp2y = (p2.y - (p3.y - p1.y) / 6).toFixed(1);
+        d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+      }
+      return d;
+    }
+
+    const linePath = buildPath(pts);
+    const fillPath = `${linePath} L ${pts[pts.length-1].x},${padT+gH} L ${pts[0].x},${padT+gH} Z`;
+
+    // Current time marker
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const totalMins = (hourly.length - 1) * 60;
+    const nowX = (padL + (nowMins / totalMins) * gW).toFixed(1);
+    const frac = now.getMinutes() / 60;
+    const h1 = vals[Math.min(now.getHours(), vals.length - 1)];
+    const h2 = vals[Math.min(now.getHours() + 1, vals.length - 1)];
+    const nowY = toY(h1 + (h2 - h1) * frac).toFixed(1);
+
+    // Time axis labels
+    const timeLabels = [0, 6, 12, 18, 23].map(h => {
+      const x = (padL + (h / (hourly.length - 1)) * gW).toFixed(1);
+      const label = h === 0 ? '12a' : h === 6 ? '6a' : h === 12 ? '12p' : h === 18 ? '6p' : '11p';
+      return `<text x="${x}" y="${H - 7}" text-anchor="middle" fill="#3a6a88" font-size="13" font-family="Georgia,serif">${label}</text>`;
+    }).join('');
+
+    // Y axis labels
+    const yLabels = [rawMin, rawMax].map(v => {
+      const y = toY(v).toFixed(1);
+      return `<text x="${padL - 5}" y="${(parseFloat(y) + 4).toFixed(1)}" text-anchor="end" fill="#3a6a88" font-size="13" font-family="Georgia,serif">${v.toFixed(1)}'</text>`;
+    }).join('');
+
+    // Hi/Lo markers
+    const todayStr = now.toISOString().slice(0, 10);
+    const hiLoMarkers = hiLo
+      .filter(p => p.t.startsWith(todayStr))
+      .map(p => {
+        const [, tp] = p.t.split(' ');
+        const [hh, mm] = tp.split(':');
+        const totalM = parseInt(hh) * 60 + parseInt(mm);
+        const x = (padL + (totalM / totalMins) * gW).toFixed(1);
+        const y = toY(parseFloat(p.v)).toFixed(1);
+        const isHigh = p.type === 'H';
+        const labelY = (parseFloat(y) + (isHigh ? -9 : 17)).toFixed(1);
+        const h12 = ((parseInt(hh) + 11) % 12 + 1);
+        const ampm = parseInt(hh) < 12 ? 'a' : 'p';
+        const color = isHigh ? '#7fd1e8' : '#4a7a99';
+        return `
+          <circle cx="${x}" cy="${y}" r="3" fill="${color}" />
+          <text x="${x}" y="${labelY}" text-anchor="middle" fill="${color}" font-size="12" font-family="Georgia,serif">${isHigh ? 'H' : 'L'} ${h12}:${mm}${ampm} ${parseFloat(p.v).toFixed(1)}'</text>`;
+      }).join('');
+
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1a5a7a" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#0a1628" stop-opacity="0.1"/>
+        </linearGradient>
+      </defs>
+      <line x1="${padL}" y1="${padT+gH}" x2="${W-padR}" y2="${padT+gH}" stroke="#1e3248" stroke-width="1"/>
+      <path d="${fillPath}" fill="url(#tg)"/>
+      <path d="${linePath}" fill="none" stroke="#7fd1e8" stroke-width="1.8"/>
+      <line x1="${nowX}" y1="${padT}" x2="${nowX}" y2="${padT+gH}" stroke="#e8c870" stroke-width="1" stroke-dasharray="3,3"/>
+      <circle cx="${nowX}" cy="${nowY}" r="4" fill="#e8c870"/>
+      ${hiLoMarkers}
+      ${timeLabels}
+      ${yLabels}`;
+  }
+
   async function fetchConditions() {
-    const btn = document.getElementById('check-btn');
-    btn.disabled = true;
     hideError();
     setStatus('Fetching wave & wind data…');
 
@@ -427,22 +468,21 @@
 
       setStatus('Fetching tide predictions…');
 
-      // NOAA Tides API
+      // NOAA Tides API — hourly for graph + hi/lo for markers
       const today = now.toISOString().slice(0, 10).replace(/-/g, '');
       const tomorrow = new Date(now.getTime() + 86400000).toISOString().slice(0, 10).replace(/-/g, '');
-      const noaaUrl = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?` +
-        `begin_date=${today}&end_date=${tomorrow}&station=${NOAA_STATION}` +
-        `&product=predictions&datum=MLLW&time_zone=lst_ldt&interval=hilo&units=english&application=folly_surf&format=json`;
+      const base = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=${NOAA_STATION}&product=predictions&datum=MLLW&time_zone=lst_ldt&units=english&application=folly_surf&format=json`;
 
-      let tides = [];
+      let hourlyTides = [], hiLoTides = [];
       try {
-        const tideRes = await fetch(noaaUrl);
-        const tideData = await tideRes.json();
-        if (tideData.predictions) {
-          tides = tideData.predictions.slice(0, 4); // next 4 highs/lows
-        }
+        const [hourlyRes, hiLoRes] = await Promise.all([
+          fetch(`${base}&begin_date=${today}&end_date=${today}&interval=h`),
+          fetch(`${base}&begin_date=${today}&end_date=${tomorrow}&interval=hilo`)
+        ]);
+        const [hourlyData, hiLoData] = await Promise.all([hourlyRes.json(), hiLoRes.json()]);
+        if (hourlyData.predictions) hourlyTides = hourlyData.predictions;
+        if (hiLoData.predictions) hiLoTides = hiLoData.predictions;
       } catch (e) {
-        // tides optional — don't fail the whole report
         console.warn('Tide fetch failed:', e);
       }
 
@@ -462,26 +502,8 @@
       badge.className = rating.cls;
       document.getElementById('report-text').textContent = buildReport(data, rating);
 
-      // Tides
-      if (tides.length > 0) {
-        const tideRow = document.getElementById('tide-row');
-        tideRow.innerHTML = '';
-        // Filter to future tides only
-        const futureTides = tides.filter(t => new Date(t.t) > new Date());
-        (futureTides.length > 0 ? futureTides : tides).slice(0, 4).forEach(t => {
-          const [datePart, timePart] = t.t.split(' ');
-          const [hh, mm] = timePart.split(':');
-          const h12 = ((parseInt(hh) + 11) % 12 + 1);
-          const ampm = parseInt(hh) < 12 ? 'AM' : 'PM';
-          const div = document.createElement('div');
-          div.className = 'tide-item';
-          div.innerHTML = `
-            <div class="tide-type">${t.type === 'H' ? 'High' : 'Low'}</div>
-            <div class="tide-time">${h12}:${mm} ${ampm}</div>
-            <div class="tide-height">${parseFloat(t.v).toFixed(1)}ft</div>
-          `;
-          tideRow.appendChild(div);
-        });
+      if (hourlyTides.length > 0) {
+        renderTideGraph(hourlyTides, hiLoTides, now);
         document.getElementById('tides-card').classList.remove('hidden');
       }
 
@@ -494,10 +516,9 @@
     } catch (err) {
       showError(`Error: ${err.message}`);
       setStatus('');
-    } finally {
-      btn.disabled = false;
     }
   }
+  document.addEventListener('DOMContentLoaded', fetchConditions);
 </script>
 
 </body>
