@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Folly Beach Surf Report</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #0a1628;
+      color: #e8dcc8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 2.4rem;
+      letter-spacing: 0.08em;
+      color: #f0e6cc;
+      text-transform: uppercase;
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: #7a9bb5;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+
+    #check-btn {
+      display: block;
+      margin: 0 auto 2.5rem;
+      padding: 1rem 3rem;
+      font-size: 1.1rem;
+      font-family: 'Georgia', serif;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: transparent;
+      color: #7fd1e8;
+      border: 2px solid #7fd1e8;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #check-btn:hover { background: #7fd1e8; color: #0a1628; }
+    #check-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #status {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #7a9bb5;
+      letter-spacing: 0.1em;
+      min-height: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.2rem;
+      width: 100%;
+      max-width: 860px;
+      margin-bottom: 1.5rem;
+    }
+
+    .card {
+      background: #111e30;
+      border: 1px solid #1e3248;
+      border-radius: 4px;
+      padding: 1.2rem 1.4rem;
+    }
+
+    .card-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #4a7a99;
+      margin-bottom: 0.4rem;
+    }
+
+    .card-value {
+      font-size: 1.7rem;
+      color: #f0e6cc;
+      line-height: 1;
+    }
+
+    .card-sub {
+      font-size: 0.8rem;
+      color: #7a9bb5;
+      margin-top: 0.3rem;
+    }
+
+    #rating-card {
+      max-width: 860px;
+      width: 100%;
+      background: #111e30;
+      border: 1px solid #1e3248;
+      border-radius: 4px;
+      padding: 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    #rating-badge {
+      font-size: 2rem;
+      font-weight: bold;
+      padding: 0.5rem 1.2rem;
+      border-radius: 3px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #report-text {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #c8d8e8;
+    }
+
+    #tides-card {
+      max-width: 860px;
+      width: 100%;
+      background: #111e30;
+      border: 1px solid #1e3248;
+      border-radius: 4px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 1.5rem;
+    }
+
+    #tides-card h3 {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #4a7a99;
+      margin-bottom: 0.8rem;
+    }
+
+    .tide-row {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .tide-item {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .tide-type {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #4a7a99;
+    }
+
+    .tide-time {
+      font-size: 1.1rem;
+      color: #f0e6cc;
+      margin-top: 0.1rem;
+    }
+
+    .tide-height {
+      font-size: 0.8rem;
+      color: #7a9bb5;
+    }
+
+    #cams-card {
+      max-width: 860px;
+      width: 100%;
+      background: #111e30;
+      border: 1px solid #1e3248;
+      border-radius: 4px;
+      padding: 1.2rem 1.4rem;
+    }
+
+    #cams-card h3 {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #4a7a99;
+      margin-bottom: 0.8rem;
+    }
+
+    .cam-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+    }
+
+    .cam-link {
+      color: #7fd1e8;
+      text-decoration: none;
+      font-size: 0.9rem;
+      border: 1px solid #1e3248;
+      padding: 0.4rem 0.9rem;
+      border-radius: 3px;
+      transition: all 0.2s;
+    }
+
+    .cam-link:hover {
+      background: #1e3248;
+      color: #aee8f8;
+    }
+
+    #error-box {
+      max-width: 860px;
+      width: 100%;
+      background: #2a1010;
+      border: 1px solid #5a2020;
+      border-radius: 4px;
+      padding: 1rem 1.4rem;
+      color: #e88a8a;
+      font-size: 0.85rem;
+      display: none;
+      margin-bottom: 1.5rem;
+    }
+
+    footer {
+      margin-top: 2.5rem;
+      font-size: 0.72rem;
+      color: #2a4a66;
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+
+    .hidden { display: none !important; }
+
+    .rating-flat    { background: #1e2a3a; color: #6a9ab8; }
+    .rating-poor    { background: #1e2a18; color: #7ab86a; }
+    .rating-fair    { background: #1e2818; color: #a8c860; }
+    .rating-good    { background: #1a2a10; color: #70d840; }
+    .rating-epic    { background: #0a2000; color: #40ff00; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Folly Beach</h1>
+    <p>Surf &amp; Conditions Report &bull; Folly Beach, SC</p>
+  </header>
+
+  <button id="check-btn" onclick="fetchConditions()">Check Conditions</button>
+  <div id="status"></div>
+
+  <div id="error-box"></div>
+
+  <div id="rating-card" class="hidden">
+    <div id="rating-badge">—</div>
+    <div id="report-text">Fetching report…</div>
+  </div>
+
+  <div class="card-grid hidden" id="conditions-grid">
+    <div class="card">
+      <div class="card-label">Wave Height</div>
+      <div class="card-value" id="wave-height">—</div>
+      <div class="card-sub" id="wave-period">— sec period</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Swell</div>
+      <div class="card-value" id="swell-height">—</div>
+      <div class="card-sub" id="swell-dir">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Wind</div>
+      <div class="card-value" id="wind-speed">—</div>
+      <div class="card-sub" id="wind-dir">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Water Temp</div>
+      <div class="card-value" id="water-temp">—</div>
+      <div class="card-sub">surface</div>
+    </div>
+  </div>
+
+  <div id="tides-card" class="hidden">
+    <h3>Tides — Charleston Station</h3>
+    <div class="tide-row" id="tide-row"></div>
+  </div>
+
+  <div id="cams-card">
+    <h3>Live Webcams</h3>
+    <div class="cam-links">
+      <a class="cam-link" href="https://www.surfchex.com/cameras/sc/folly-beach/" target="_blank" rel="noopener">Surfchex — Washout</a>
+      <a class="cam-link" href="https://www.tideshotelinc.com/webcam/" target="_blank" rel="noopener">Tides Hotel Pier Cam</a>
+      <a class="cam-link" href="https://www.earthcam.com/usa/southcarolina/follybeach/" target="_blank" rel="noopener">EarthCam — Folly Beach</a>
+    </div>
+  </div>
+
+  <footer>
+    Data: Open-Meteo Marine API &bull; NOAA Tides &amp; Currents (Station 8665530 Charleston)
+  </footer>
+
+<script>
+  // Folly Beach, SC
+  const LAT = 32.655;
+  const LON = -79.940;
+  // NOAA Charleston station (closest official gauge)
+  const NOAA_STATION = '8665530';
+
+  function degToCompass(deg) {
+    const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+    return dirs[Math.round(deg / 22.5) % 16];
+  }
+
+  function metersToFeet(m) {
+    return (m * 3.28084).toFixed(1);
+  }
+
+  function cToF(c) {
+    return ((c * 9/5) + 32).toFixed(0);
+  }
+
+  function mpsToMph(mps) {
+    return (mps * 2.23694).toFixed(0);
+  }
+
+  function setStatus(msg) {
+    document.getElementById('status').textContent = msg;
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('error-box');
+    box.textContent = msg;
+    box.style.display = 'block';
+  }
+
+  function hideError() {
+    document.getElementById('error-box').style.display = 'none';
+  }
+
+  function getRating(waveHeightM, windSpeedMps, windDirDeg, swellPeriod) {
+    // Offshore for Folly Beach = winds from NW, W, or N (roughly 270–360 or 0–45)
+    const wd = windDirDeg;
+    const isOffshore = (wd >= 270 && wd <= 360) || (wd >= 0 && wd <= 45);
+    const waveFt = waveHeightM * 3.28084;
+
+    if (waveFt < 0.5) return { label: 'FLAT', cls: 'rating-flat', text: 'Glassy and flat. Good for beginners or a paddle.' };
+    if (waveFt < 1.5) {
+      if (isOffshore && swellPeriod >= 8) return { label: 'FAIR', cls: 'rating-fair', text: 'Small but clean. Fun for longboards.' };
+      return { label: 'POOR', cls: 'rating-poor', text: 'Small and junky. Not much to work with.' };
+    }
+    if (waveFt < 3) {
+      if (isOffshore && swellPeriod >= 8) return { label: 'GOOD', cls: 'rating-good', text: 'Chest-high and groomed. Go surf.' };
+      if (isOffshore) return { label: 'FAIR', cls: 'rating-fair', text: 'Waist-high with light offshore winds. Decent.' };
+      return { label: 'POOR', cls: 'rating-poor', text: 'Waist-high but blown out. Bring low expectations.' };
+    }
+    if (waveFt < 5) {
+      if (isOffshore && swellPeriod >= 10) return { label: 'EPIC', cls: 'rating-epic', text: 'Overhead and clean — rare for Folly. Drop everything.' };
+      if (isOffshore) return { label: 'GOOD', cls: 'rating-good', text: 'Shoulder-high with offshore winds. Solid session.' };
+      return { label: 'FAIR', cls: 'rating-fair', text: 'Overhead but messy. Might be fun, might be chaos.' };
+    }
+    return { label: 'EPIC', cls: 'rating-epic', text: 'Big day at Folly. Check conditions carefully before paddling out.' };
+  }
+
+  function buildReport(data, rating) {
+    const { waveHeightM, swellHeightM, swellDirDeg, swellPeriod, windSpeedMps, windGustMps, windDirDeg, waterTempC } = data;
+    const waveFt = metersToFeet(waveHeightM);
+    const swellFt = metersToFeet(swellHeightM);
+    const windMph = mpsToMph(windSpeedMps);
+    const gustMph = mpsToMph(windGustMps);
+    const windDir = degToCompass(windDirDeg);
+    const swellDir = degToCompass(swellDirDeg);
+    const tempF = cToF(waterTempC);
+
+    return `${waveFt}ft waves (${swellFt}ft swell out of ${swellDir} at ${swellPeriod.toFixed(0)}s) with ${windMph}mph ${windDir} winds` +
+      (windGustMps > windSpeedMps + 2 ? `, gusting to ${gustMph}mph` : '') +
+      `. Water temp ${tempF}°F. ${rating.text}`;
+  }
+
+  async function fetchConditions() {
+    const btn = document.getElementById('check-btn');
+    btn.disabled = true;
+    hideError();
+    setStatus('Fetching wave & wind data…');
+
+    try {
+      // Open-Meteo Marine API
+      const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${LAT}&longitude=${LON}` +
+        `&hourly=wave_height,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,sea_surface_temperature` +
+        `&wind_speed_unit=ms&timezone=America%2FNew_York&forecast_days=1`;
+
+      // Open-Meteo Weather API
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
+        `&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m` +
+        `&wind_speed_unit=ms&timezone=America%2FNew_York&forecast_days=1`;
+
+      const [marineRes, weatherRes] = await Promise.all([
+        fetch(marineUrl),
+        fetch(weatherUrl)
+      ]);
+
+      if (!marineRes.ok) throw new Error(`Marine API error: ${marineRes.status}`);
+      if (!weatherRes.ok) throw new Error(`Weather API error: ${weatherRes.status}`);
+
+      const [marine, weather] = await Promise.all([marineRes.json(), weatherRes.json()]);
+
+      // Get current hour index
+      const now = new Date();
+      const hour = now.getHours();
+
+      const h = marine.hourly;
+      const w = weather.hourly;
+
+      const data = {
+        waveHeightM:  h.wave_height[hour] ?? h.wave_height[0],
+        swellHeightM: h.swell_wave_height[hour] ?? h.swell_wave_height[0],
+        swellDirDeg:  h.swell_wave_direction[hour] ?? h.swell_wave_direction[0],
+        swellPeriod:  h.swell_wave_period[hour] ?? h.swell_wave_period[0],
+        windSpeedMps: w.wind_speed_10m[hour] ?? w.wind_speed_10m[0],
+        windGustMps:  w.wind_gusts_10m[hour] ?? w.wind_gusts_10m[0],
+        windDirDeg:   w.wind_direction_10m[hour] ?? w.wind_direction_10m[0],
+        waterTempC:   h.sea_surface_temperature[hour] ?? h.sea_surface_temperature[0],
+      };
+
+      setStatus('Fetching tide predictions…');
+
+      // NOAA Tides API
+      const today = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const tomorrow = new Date(now.getTime() + 86400000).toISOString().slice(0, 10).replace(/-/g, '');
+      const noaaUrl = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?` +
+        `begin_date=${today}&end_date=${tomorrow}&station=${NOAA_STATION}` +
+        `&product=predictions&datum=MLLW&time_zone=lst_ldt&interval=hilo&units=english&application=folly_surf&format=json`;
+
+      let tides = [];
+      try {
+        const tideRes = await fetch(noaaUrl);
+        const tideData = await tideRes.json();
+        if (tideData.predictions) {
+          tides = tideData.predictions.slice(0, 4); // next 4 highs/lows
+        }
+      } catch (e) {
+        // tides optional — don't fail the whole report
+        console.warn('Tide fetch failed:', e);
+      }
+
+      // Render conditions
+      const rating = getRating(data.waveHeightM, data.windSpeedMps, data.windDirDeg, data.swellPeriod);
+
+      document.getElementById('wave-height').textContent = `${metersToFeet(data.waveHeightM)}ft`;
+      document.getElementById('wave-period').textContent = `${data.swellPeriod.toFixed(0)}s period`;
+      document.getElementById('swell-height').textContent = `${metersToFeet(data.swellHeightM)}ft`;
+      document.getElementById('swell-dir').textContent = `${degToCompass(data.swellDirDeg)} @ ${data.swellPeriod.toFixed(0)}s`;
+      document.getElementById('wind-speed').textContent = `${mpsToMph(data.windSpeedMps)}mph`;
+      document.getElementById('wind-dir').textContent = `${degToCompass(data.windDirDeg)} (gusts ${mpsToMph(data.windGustMps)}mph)`;
+      document.getElementById('water-temp').textContent = `${cToF(data.waterTempC)}°F`;
+
+      const badge = document.getElementById('rating-badge');
+      badge.textContent = rating.label;
+      badge.className = rating.cls;
+      document.getElementById('report-text').textContent = buildReport(data, rating);
+
+      // Tides
+      if (tides.length > 0) {
+        const tideRow = document.getElementById('tide-row');
+        tideRow.innerHTML = '';
+        // Filter to future tides only
+        const futureTides = tides.filter(t => new Date(t.t) > new Date());
+        (futureTides.length > 0 ? futureTides : tides).slice(0, 4).forEach(t => {
+          const [datePart, timePart] = t.t.split(' ');
+          const [hh, mm] = timePart.split(':');
+          const h12 = ((parseInt(hh) + 11) % 12 + 1);
+          const ampm = parseInt(hh) < 12 ? 'AM' : 'PM';
+          const div = document.createElement('div');
+          div.className = 'tide-item';
+          div.innerHTML = `
+            <div class="tide-type">${t.type === 'H' ? 'High' : 'Low'}</div>
+            <div class="tide-time">${h12}:${mm} ${ampm}</div>
+            <div class="tide-height">${parseFloat(t.v).toFixed(1)}ft</div>
+          `;
+          tideRow.appendChild(div);
+        });
+        document.getElementById('tides-card').classList.remove('hidden');
+      }
+
+      document.getElementById('rating-card').classList.remove('hidden');
+      document.getElementById('conditions-grid').classList.remove('hidden');
+
+      const ts = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+      setStatus(`Updated ${ts}`);
+
+    } catch (err) {
+      showError(`Error: ${err.message}`);
+      setStatus('');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+
+</body>
+</html>
